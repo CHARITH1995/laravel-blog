@@ -1,13 +1,33 @@
 @extends('main')
 @section('title','|edit posts')
+@section('stylesheets')
+
+    {!! Html::style('css/select2.min.css') !!}
+    <script src="//cdn.tinymce.com/4/tinymce.min.js"></script>
+    <script>
+        tinymce.init({
+            selector:'textarea',
+            plugins:'link code',
+
+        });
+    </script>
+@endsection
 @section('content')
     <div class="row">
-        {!! Form::model($post,['route'=>['posts.update',$post['id']],'method'=>'PUT']) !!}
+        {!! Form::model($post,['route'=>['posts.update',$post['id']],'method'=>'PUT','files'=>'true']) !!}
 
 
     <div class="col-md-8">
         {{Form::label('title','Title :')}}
-        {{ Form::text('title',null,["class"=>'form-control']) }}
+        {{Form::text('title',null,["class"=>'form-control']) }}
+
+        {{Form::label('slug','Slug :',["class"=>'form-spacing-top'])}}
+        {{Form::text('slug',null,["class"=>'form-control']) }}
+
+        {{Form::label('category_id','Category :' ,["class"=>'form-spacing-top'])}}
+        {{Form::select('category_id',$category,null,['class'=>'form-control'])}}
+
+
         {{Form::label('body','Body :',["class"=>'form-spacing-top'])}}
         {{Form::textarea('body',null,["class"=>'form-control'])}}
 
@@ -43,3 +63,8 @@
         {!!  Form::close() !!}
     </div>
     @stop
+@section('scripts')
+
+    {!! Html::script('js/select2.min.js') !!}
+
+@endsection

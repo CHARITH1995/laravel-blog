@@ -1,5 +1,5 @@
 @extends('main')
-@section('title','|contact page')
+@section('title','| Contact Page')
 @section('content')
 
         <div class="col-md-12">

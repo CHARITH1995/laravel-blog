@@ -9,7 +9,7 @@ namespace App\Http\Controllers;
 use App\Post;
 class PagesController extends Controller{
     public function getIndex(){
-        $posts= Post ::orderBy('id','asc')-> paginate(5);
+        $posts= Post ::orderBy('id','asc')->limit(7)->get();
         return view('pages.welcome')->withPosts($posts);
     }
     public function About(){

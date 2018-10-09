@@ -6,7 +6,10 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Requests;
 use App\Post;
-use Session;
+use App\Category;
+use Illuminate\Support\Facades\Session;
+use Mews\Purifier\Purifier;
+use Image;
 
 class PostController extends Controller
 {
@@ -15,6 +18,11 @@ class PostController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     public function index()
     {
         $posts=Post::orderBy('id','desc')->paginate(5);
@@ -28,7 +36,8 @@ class PostController extends Controller
      */
     public function create()
     {
-        return view ('posts.create');
+        $categories = Category::all();
+        return view ('posts.create')->withCategories($categories);
     }
 
     /**
@@ -39,16 +48,33 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
-        $this->validate($request,[
-            'title'=>'required|max:255',
-            'body'=>'required'
 
+        $this->validate($request,[
+            'title'      =>'required|max:255',
+            'body'       =>'required',
+            'category_id'=>'required|Integer',
+            'slug'       =>'required|alphadash|min:5|max:255|unique:posts,slug'
         ]);
+
         $post = new Post;
         $post->title=$request->title;
-        $post->body=$request->body;
+        $post->body=$request->body;  //Purifier::clean();
+        $post->slug=$request->slug;
+        $post->category_id = $request->category_id;
 
-        $post->save();
+
+        if ($request->hasFile('featured_image')) {
+            $image = $request->file('featured_image');
+            $filename = time() . '.' . $image->getClientOriginalExtension();
+           // $destinationPath = base_path() . 'public/images/'. $filename;
+            $location = public_path('images/' . $filename);
+            Image::make($image)->resize(800, 400)->save($location);
+            $post->image = $filename;
+        }
+            $post->save();
+
+
+
         Session::flash('success','blog post successfully saved');
         return redirect()->route('posts.show',$post->id);
     }
@@ -74,8 +100,17 @@ class PostController extends Controller
      */
     public function edit($id)
     {
-        $post =Post :: find($id);
-        return view('posts.edit')->withPost($post);
+        $post =Post::find($id);
+        $categories = Category::all();
+        $cats=[];
+        foreach($categories as $category){
+            $cats[$category->id] = $category->name;
+        }
+
+
+
+
+        return view('posts.edit')->withPost($post)->withCategory($cats);
 
 
     }
@@ -89,15 +124,37 @@ class PostController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $this->validate($request,[
-            'title'=>'required|max:255',
-            'body'=>'required'
-        ]);
+        $post = Post::find($id);
+
+        if($request->input('slug')==$post['slug']){
+            $this->validate($request,[
+                'title'=>'required|max:255',
+                'category_id'=>'required|Integer',
+                'body'=>'required'
+
+            ]);
+
+        }else{
+            $this->validate($request,[
+                'title'=>'required|max:255',
+                'body'=>'required',
+                'category_id'=>'required|Integer',
+                'slug'=>'required|min:5|max:255|unique:posts,slug'
+            ]);
+        }
+
         $post = Post::find($id);
         $post-> title = $request->input('title');
-        $post-> body = $request->input('body');
+        $post-> body = $request->input('body'); //Purifier::clean();
+        $post-> slug = $request->input('slug');
+        $post-> category_id = $request->input('category_id');
+
         $post->save();
-        Session::flash('sucess','This post is sucessfully saved.');
+
+
+
+
+        Session::flash('success','This post is successfully saved.');
         return redirect()->route('posts.show',$post['id']);
 
 
@@ -114,7 +171,7 @@ class PostController extends Controller
     {
         $post = Post::find($id);
         $post->delete();
-        Session::flash('success','the post sucessfully deleted');
+        Session::flash('success','the post successfully deleted');
         return redirect()->route('posts.index');
     }
 }
